@@ -36,6 +36,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.carbs.android.segmentcontrolview.library.SegmentControlView;
+import invonate.cn.ygscanner.Entry.Ku;
 import invonate.cn.ygscanner.Fragment.Smddqr;
 import invonate.cn.ygscanner.Fragment.SmddqrDelete;
 import invonate.cn.ygscanner.Util.CustomViewPager;
@@ -69,6 +70,9 @@ public class SmddqrActivity extends AppCompatActivity {
 
     private ArrayList<String> info;
 
+    ArrayList<Ku.DataBean.KubieBean> data;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +81,7 @@ public class SmddqrActivity extends AppCompatActivity {
         DatabaseHelper dbHelper = new DatabaseHelper(this);
         db = dbHelper.getReadableDatabase();
         ButterKnife.bind(this);
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
         tab.setTexts(new String[]{"统计信息", "明细信息"});
         initFragment();
         pager.setScanScroll(false);
@@ -139,6 +144,7 @@ public class SmddqrActivity extends AppCompatActivity {
                 Intent intent = new Intent(SmddqrActivity.this, SmddActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putStringArrayList("list", info);
+                bundle.putSerializable("data",data);
                 intent.putExtras(bundle);
                 startActivity(intent);
                 finish();
@@ -345,12 +351,13 @@ public class SmddqrActivity extends AppCompatActivity {
         ArrayList<String> list = new ArrayList<>();
         DatabaseHelper helper = new DatabaseHelper(this);
         SQLiteDatabase db = helper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT KU,QU,PAI FROM YG_DDXXM", null);
+        Cursor cursor = db.rawQuery("SELECT KU,QU,PAI,KUBIE FROM YG_DDXXM", null);
         if (cursor.getCount() != 0) {
             cursor.moveToNext();
             list.add(cursor.getString(0));
             list.add(cursor.getString(1));
             list.add(cursor.getString(2));
+            list.add(cursor.getString(3));
         }
         return list;
     }

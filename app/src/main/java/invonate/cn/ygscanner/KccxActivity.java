@@ -35,7 +35,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import invonate.cn.ygscanner.Adapter.KccxAdapter;
-import invonate.cn.ygscanner.Entry.Kuqu;
+import invonate.cn.ygscanner.Entry.Ku;
 import invonate.cn.ygscanner.Entry.Statistics;
 import invonate.cn.ygscanner.Util.IpConfig;
 
@@ -54,9 +54,12 @@ public class KccxActivity extends AppCompatActivity {
     @BindView(R.id.sum_weight)
     TextView sumWeight;
 
-    private List<Kuqu> kuqu = new ArrayList<>();
+    ArrayList<Ku.DataBean.KubieBean> data;
+    @BindView(R.id.sp_kubie)
+    AppCompatSpinner spKubie;
     private List<String> list_pai = new ArrayList<>();
 
+    private String kubie;
     private String ku;
     private String qu;
     private String pai;
@@ -108,8 +111,7 @@ public class KccxActivity extends AppCompatActivity {
         setContentView(R.layout.activity_kccx);
         ButterKnife.bind(this);
         setTitle("库存查询");
-
-        kuqu = JSON.parseArray(getJson("kuqu2.json", this), Kuqu.class);
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
         list_pai = JSON.parseArray(getJson("pai.json", this), String.class);
 
         ArrayAdapter<String> adapter3 = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, list_pai);
@@ -127,34 +129,43 @@ public class KccxActivity extends AppCompatActivity {
             }
         });
 
-        ArrayAdapter<Kuqu> adapter1 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, kuqu);
-        spKu.setAdapter(adapter1);
-        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        spKu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        ArrayAdapter<Ku.DataBean.KubieBean> adapter0 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, data);
+        spKubie.setAdapter(adapter0);
+        adapter0.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spKubie.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, final int position, long l) {
-                ku = kuqu.get(position).getName().trim();
-                final List<String> list_qu = kuqu.get(position).getValue();
-                if (position == 0) {
-                    spQu.setAdapter(null);
-                } else {
-                    Log.i("spKu", "spKu");
-                    ArrayAdapter<String> adapter2 = new ArrayAdapter<>(KccxActivity.this, android.R.layout.simple_spinner_item, list_qu);
-                    spQu.setAdapter(adapter2);
-                    adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spQu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                            qu = list_qu.get(i).trim();
-                        }
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                kubie = data.get(i).getName();
+                final List<Ku.DataBean.KubieBean.KuBean> list_ku = data.get(i).getKu();
+                ArrayAdapter<Ku.DataBean.KubieBean.KuBean> adapter1 = new ArrayAdapter<>(KccxActivity.this, android.R.layout.simple_spinner_item, list_ku);
+                spKu.setAdapter(adapter1);
+                adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spKu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        ku = list_ku.get(i).getName();
+                        final List<Ku.DataBean.KubieBean.KuBean.QvBean> list_qv = list_ku.get(i).getQv();
+                        ArrayAdapter<Ku.DataBean.KubieBean.KuBean.QvBean> adapter2 = new ArrayAdapter<>(KccxActivity.this, android.R.layout.simple_spinner_item, list_qv);
+                        spQu.setAdapter(adapter2);
+                        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spQu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                qu = list_qv.get(i).getValue();
+                            }
 
-                        @Override
-                        public void onNothingSelected(AdapterView<?> adapterView) {
+                            @Override
+                            public void onNothingSelected(AdapterView<?> adapterView) {
 
-                        }
-                    });
-                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
             }
 
             @Override
@@ -169,6 +180,11 @@ public class KccxActivity extends AppCompatActivity {
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.sure:
+                if (kubie == null || "".equals(kubie)) {
+                    Toast.makeText(this, "请选择库别", Toast.LENGTH_SHORT).show();
+                    return;
+
+                }
                 if (ku == null || "".equals(ku)) {
                     Toast.makeText(this, "请选择库区", Toast.LENGTH_SHORT).show();
                     return;

@@ -21,6 +21,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,16 +45,20 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import invonate.cn.ygscanner.Entry.Goods;
-import invonate.cn.ygscanner.Entry.Kuqu;
+import invonate.cn.ygscanner.Entry.Ku;
 import invonate.cn.ygscanner.Util.DatabaseHelper;
 import invonate.cn.ygscanner.Util.IpConfig;
 
 public class SmckActivity extends AppCompatActivity {
 
-    @BindView(R.id.sp_out)
-    AppCompatSpinner spOut;
-    @BindView(R.id.sp_in)
-    AppCompatSpinner spIn;
+    @BindView(R.id.sp_outkubie)
+    AppCompatSpinner spOutkubie;
+    @BindView(R.id.sp_inkubie)
+    AppCompatSpinner spInkubie;
+    @BindView(R.id.sp_outku)
+    AppCompatSpinner spOutku;
+    @BindView(R.id.sp_inku)
+    AppCompatSpinner spInku;
     @BindView(R.id.code)
     EditText code;
     @BindView(R.id.type)
@@ -71,7 +76,9 @@ public class SmckActivity extends AppCompatActivity {
     @BindView(R.id.sum_weight)
     TextView sumWeight;
 
-    private List<Kuqu> kuqu = new ArrayList<>();
+    ArrayList<Ku.DataBean.KubieBean> data;
+    @BindView(R.id.finish)
+    Button finish;
 
     private String name;// 工号
     private String bzmc;// 班组
@@ -79,8 +86,13 @@ public class SmckActivity extends AppCompatActivity {
 
     SQLiteDatabase db;
 
+    String okubie;
     String oku;
+    String ikubie;
     String iku;
+
+    int old_iku = 0;
+    int old_oku = 0;
 
     private boolean sure;
 
@@ -96,12 +108,72 @@ public class SmckActivity extends AppCompatActivity {
         dialog.setMessage("加载中");
         DatabaseHelper database = new DatabaseHelper(this);
         db = database.getReadableDatabase();
-        kuqu = JSON.parseArray(getJson("kuqu2.json", this), Kuqu.class);
-        ArrayAdapter<Kuqu> adapter1 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, kuqu);
-        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
+        ArrayAdapter<Ku.DataBean.KubieBean> adapter0 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, data);
+        spOutkubie.setAdapter(adapter0);
+        spInkubie.setAdapter(adapter0);
+        adapter0.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-        spOut.setAdapter(adapter1);
-        spIn.setAdapter(adapter1);
+        spOutkubie.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                okubie = data.get(i).getName();
+                final List<Ku.DataBean.KubieBean.KuBean> list_ku = data.get(i).getKu();
+                ArrayAdapter<Ku.DataBean.KubieBean.KuBean> adapter1 = new ArrayAdapter<>(SmckActivity.this, android.R.layout.simple_spinner_item, list_ku);
+                spOutku.setAdapter(adapter1);
+                adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spOutku.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        oku = list_ku.get(i).getName();
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
+                if (old_oku != 0) {
+                    spOutku.setSelection(old_oku);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        spInkubie.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                ikubie = data.get(i).getName();
+                final List<Ku.DataBean.KubieBean.KuBean> list_ku = data.get(i).getKu();
+                ArrayAdapter<Ku.DataBean.KubieBean.KuBean> adapter1 = new ArrayAdapter<>(SmckActivity.this, android.R.layout.simple_spinner_item, list_ku);
+                spInku.setAdapter(adapter1);
+                adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spInku.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        iku = list_ku.get(i).getName();
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
+                if (old_iku != 0) {
+                    spOutku.setSelection(old_iku);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
 
         SharedPreferences share = getApplicationContext().getSharedPreferences("share", Context.MODE_PRIVATE);
         bzmc = share.getString("bzmc", "NORE");
@@ -137,46 +209,48 @@ public class SmckActivity extends AppCompatActivity {
             }
         });
 
-        spIn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                iku = kuqu.get(i).getName();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
-
-        spOut.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                oku = kuqu.get(i).getName();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
 //            sure = true;
             List<String> list = bundle.getStringArrayList("list");
             if (list != null) {
-                String in = list.get(0);
-                String out = list.get(1);
-                for (int i = 0; i < kuqu.size(); i++) {
-                    if (in.equals(kuqu.get(i).getName())) {
-                        spIn.setSelection(i);
+                String list_iku = list.get(0);
+                String list_oku = list.get(1);
+                String list_ikubie = list.get(2);
+                String list_okubie = list.get(3);
+                List<Ku.DataBean.KubieBean.KuBean> iku = null;
+                List<Ku.DataBean.KubieBean.KuBean> oku = null;
+                for (int i = 0; i < data.size(); i++) {
+                    if (list_ikubie.equals(data.get(i).getName())) {
+                        spInkubie.setSelection(i);
+                        iku = data.get(i).getKu();
+                        break;
+                    }
+
+                }
+                for (int i = 0; i < data.size(); i++) {
+                    if (list_okubie.equals(data.get(i).getName())) {
+                        spOutkubie.setSelection(i);
+                        oku = data.get(i).getKu();
                         break;
                     }
                 }
-                for (int i = 0; i < kuqu.size(); i++) {
-                    if (out.equals(kuqu.get(i).getName())) {
-                        spOut.setSelection(i);
-                        break;
+                if (iku != null) {
+                    for (int n = 0; n < iku.size(); n++) {
+                        if (list_iku.equals(iku.get(n).getName())) {
+                            old_iku = n;
+                            spInku.setSelection(n);
+                            break;
+                        }
+                    }
+                }
+                if (oku != null) {
+                    for (int m = 0; m < oku.size(); m++) {
+                        if (list_oku.equals(oku.get(m).getName())) {
+                            old_oku = m;
+                            spOutku.setSelection(m);
+                            break;
+                        }
                     }
                 }
             }
@@ -189,6 +263,14 @@ public class SmckActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.sure:
                 if (!sure) {
+                    if (okubie == null || "".equals(okubie)) {
+                        Toast.makeText(this, "请选择移出库别", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (ikubie == null || "".equals(ikubie)) {
+                        Toast.makeText(this, "请选择移入库别", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     if (oku == null || "".equals(oku)) {
                         Toast.makeText(this, "请选择移出库", Toast.LENGTH_SHORT).show();
                         return;
@@ -197,8 +279,10 @@ public class SmckActivity extends AppCompatActivity {
                         Toast.makeText(this, "请选择移入库", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    spIn.setEnabled(false);
-                    spOut.setEnabled(false);
+                    spInkubie.setEnabled(false);
+                    spOutkubie.setEnabled(false);
+                    spInku.setEnabled(false);
+                    spOutku.setEnabled(false);
                     sure = true;
                 }
                 break;
@@ -383,10 +467,10 @@ public class SmckActivity extends AppCompatActivity {
                         Bundle bundle = new Bundle();
                         bundle.putSerializable("goods", goods);
 
-                        String insert = "insert into YG_CKXXM(INVID,SCHDNO,ORDERLENGTH,ORDERTHICK,THEOWGT,REALWTG,PRODSPECNO,IKU,OKU) "
+                        String insert = "insert into YG_CKXXM(INVID,SCHDNO,ORDERLENGTH,ORDERTHICK,THEOWGT,REALWTG,PRODSPECNO,iKUBIE,IKU,OKUBIE,OKU) "
                                 + " values ('" + invId + "'" + ",'" + schdNo + "','"
                                 + orderLength + "','" + orderThick + "','" + theoWgt + "' ,'"
-                                + realWtg + "','" + prodSpecNo + "','" + iku + "','" + oku + "')";
+                                + realWtg + "','" + prodSpecNo + "','" + ikubie + "','" + iku + "','" + okubie + "','" + oku + "')";
                         try {
                             db.execSQL(insert);
                         } catch (Exception w) {
@@ -467,7 +551,6 @@ public class SmckActivity extends AppCompatActivity {
                     sumRealWeight.setText(msg.getData().getString("realwtg", ""));
                     sumWeight.setText(msg.getData().getString("theowgt", ""));
                     sum.setText(String.format("%d", msg.getData().getInt("sum")));
-
                     break;
                 case -1:
                     dialog.show();

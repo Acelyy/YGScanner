@@ -3,7 +3,7 @@
     package="invonate.cn.ygscanner">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -32,7 +32,7 @@
         <activity android:name=".SmrkqrActivity" />
         <activity android:name=".SmddActivity" />
         <activity android:name=".SmddqrActivity" />
-        <activity android:name=".KccxActivity"></activity>
+        <activity android:name=".KccxActivity" />
 
         <!-- 安装apk 7.0所需 -->
         <provider
@@ -46,6 +46,10 @@
         </provider>
 
         <activity android:name=".Permission.PermissionsActivity" />
+        <activity android:name=".SmkkwcxActivity" />
+        <activity android:name=".SmxcccActivity" />
+        <activity android:name=".SmxcccqrActivity" />
+        <activity android:name=".SmkwcxActivity"/>
     </application>
 
 </manifest>

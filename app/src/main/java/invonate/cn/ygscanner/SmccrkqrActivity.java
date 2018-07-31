@@ -36,6 +36,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.carbs.android.segmentcontrolview.library.SegmentControlView;
+import invonate.cn.ygscanner.Entry.Ku;
 import invonate.cn.ygscanner.Fragment.Smccrqr;
 import invonate.cn.ygscanner.Fragment.SmccrqrDelete;
 import invonate.cn.ygscanner.Util.CustomViewPager;
@@ -70,6 +71,9 @@ public class SmccrkqrActivity extends AppCompatActivity {
 
     ArrayList<String> info = new ArrayList<>();
 
+    ArrayList<Ku.DataBean.KubieBean> data;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,6 +82,7 @@ public class SmccrkqrActivity extends AppCompatActivity {
         db = dbHelper.getReadableDatabase();
         ButterKnife.bind(this);
         setTitle("扫描产出入库确认");
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
         tab.setTexts(new String[]{"统计信息", "明细信息"});
         initFragment();
         pager.setScanScroll(false);
@@ -142,6 +147,7 @@ public class SmccrkqrActivity extends AppCompatActivity {
                 Intent intent = new Intent(SmccrkqrActivity.this, SmccrkActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putStringArrayList("list", info);
+                bundle.putSerializable("data",data);
                 intent.putExtras(bundle);
                 startActivity(intent);
                 finish();
@@ -351,12 +357,14 @@ public class SmccrkqrActivity extends AppCompatActivity {
         ArrayList<String> list = new ArrayList<>();
         DatabaseHelper helper = new DatabaseHelper(this);
         SQLiteDatabase db = helper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT KU,QU,PAI FROM YG_FHXXM", null);
+        Cursor cursor = db.rawQuery("SELECT KU,QU,PAI,KUBIE FROM YG_FHXXM", null);
         if (cursor.getCount() != 0) {
             cursor.moveToNext();
             list.add(cursor.getString(0));
             list.add(cursor.getString(1));
             list.add(cursor.getString(2));
+            list.add(cursor.getString(3));
+            Log.i("hhh",cursor.getString(3));
         }
         return list;
     }

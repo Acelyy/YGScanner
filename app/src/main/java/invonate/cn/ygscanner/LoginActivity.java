@@ -364,10 +364,15 @@ public class LoginActivity extends AppCompatActivity {
             if ("丙".equals(bzmc)) {
                 bz1 = "C";
             }
-
-            String data = String.format("%-10s", "SHHL31")
+            if (zl.equals("线材")) {
+                zl = "XC";
+            }
+            if (zl.equals("棒材")) {
+                zl = "BC";
+            }
+            String data = String.format("%-10s", "SHHL31L")
                     + String.format("%-10s", uname) + String.format("%-10s", password)
-                    + String.format("%-10s", bz1) + String.format("%-1s", zl) + "*";
+                    + String.format("%-10s", bz1) + String.format("%-5s", zl) + "*";
 
             Log.i("params", data);
             // 设置需调用WebService接口需要传入的参数
@@ -390,6 +395,7 @@ public class LoginActivity extends AppCompatActivity {
                 Object object = (Object) envelope.getResponse();
                 // 获取返回的结果
                 result = object.toString();
+                Log.i("data",result);
                 String result1 = result.substring(10, 11).trim();
                 if ("F".equals(result1)) {
                     loadstate = false;
@@ -409,6 +415,7 @@ public class LoginActivity extends AppCompatActivity {
                     message.what = 1;
                     Bundle bundle = new Bundle();
                     bundle.putString("loadstatemessage", loadstatemessage);// 信息
+                    bundle.putString("XB",zlmc);
                     message.setData(bundle);
                     mHandler.sendMessage(message);
                 }
@@ -448,10 +455,15 @@ public class LoginActivity extends AppCompatActivity {
                 if (!view_rememberMe.isChecked()) {
                     clearSharePassword();
                 }
+
+                Bundle bundle = new Bundle();
+                bundle.putString("data",result);
+                bundle.putString("XB",zl);
+//                bundle.putString("data", result);
                 // 需要传输数据到登陆后的界面,
                 Intent intent = new Intent();
+                intent.putExtras(bundle);
                 intent.setClass(LoginActivity.this, MainActivity.class);
-
                 // 转向登陆后的页面
                 startActivity(intent);
                 // 结束该登陆Activity

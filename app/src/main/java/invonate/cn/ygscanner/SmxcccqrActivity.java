@@ -14,10 +14,14 @@ import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatSpinner;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.yonggang.liyangyang.lazyviewpagerlibrary.LazyFragmentPagerAdapter;
 
@@ -37,13 +41,14 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.carbs.android.segmentcontrolview.library.SegmentControlView;
 import invonate.cn.ygscanner.Entry.Ku;
-import invonate.cn.ygscanner.Fragment.Smckqr;
-import invonate.cn.ygscanner.Fragment.SmckqrDelete;
+import invonate.cn.ygscanner.Fragment.Smxcccqr;
+import invonate.cn.ygscanner.Fragment.SmxcrqDelete;
 import invonate.cn.ygscanner.Util.CustomViewPager;
 import invonate.cn.ygscanner.Util.DatabaseHelper;
 import invonate.cn.ygscanner.Util.IpConfig;
 
-public class SmckqrActivity extends AppCompatActivity {
+public class SmxcccqrActivity extends AppCompatActivity {
+
     @BindView(R.id.tab)
     SegmentControlView tab;
     @BindView(R.id.pager)
@@ -56,11 +61,15 @@ public class SmckqrActivity extends AppCompatActivity {
     TextView sumRealWeight;
     @BindView(R.id.sum_weight)
     TextView sumWeight;
+    @BindView(R.id.chehao)
+    AppCompatSpinner chehao;
 
     SQLiteDatabase db;
 
     String bz;
     String bc;
+
+    String ch;
 
     String bzmc;
     String zlmc;
@@ -68,20 +77,21 @@ public class SmckqrActivity extends AppCompatActivity {
 
     String total;
 
-    private ArrayList<String> info;
+    ArrayList<String> info = new ArrayList<>();
 
     ArrayList<Ku.DataBean.KubieBean> data;
-
+    ArrayList<Ku.DataBean.ChehaoBean> num;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_smckqr);
-        setTitle("扫描出库确认");
+        setContentView(R.layout.activity_smxcccqr);
+        ButterKnife.bind(this);
+        setTitle("线材产出扫描入库确认");
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
+        num = (ArrayList<Ku.DataBean.ChehaoBean>) getIntent().getExtras().getSerializable("chehao");
         DatabaseHelper dbHelper = new DatabaseHelper(this);
         db = dbHelper.getReadableDatabase();
-        ButterKnife.bind(this);
-        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
         tab.setTexts(new String[]{"统计信息", "明细信息"});
         initFragment();
         pager.setScanScroll(false);
@@ -95,7 +105,21 @@ public class SmckqrActivity extends AppCompatActivity {
         });
         tab.setViewPager(pager);
         getSum();
-        info = getSmck();
+        info = getSmxcccrk();
+        ArrayAdapter<Ku.DataBean.ChehaoBean> adapter = new ArrayAdapter<Ku.DataBean.ChehaoBean>(this, android.R.layout.simple_spinner_item, num);
+        chehao.setAdapter(adapter);
+        chehao.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
+                ch = num.get(position).getValue();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
         SharedPreferences share = getSharedPreferences("share",
                 Context.MODE_PRIVATE);
         bzmc = share.getString("bzmc", "NORE");
@@ -115,11 +139,22 @@ public class SmckqrActivity extends AppCompatActivity {
         }
     }
 
+    private void initFragment() {
+        Smxcccqr s = new Smxcccqr();
+        fragments[0] = s;
+        SmxcrqDelete sd = new SmxcrqDelete();
+        fragments[1] = sd;
+    }
+
     @OnClick({R.id.confirm, R.id.delete_all, R.id.forward, R.id.finish})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.confirm:
-                new Thread(new qurenkcddinfoHandler()).start();
+                if(ch != null){
+                    new Thread(new qurenkcddinfoHandler()).start();
+                }else {
+                    Toast.makeText(this, "请选择车号", Toast.LENGTH_SHORT).show();
+                }
                 break;
             case R.id.delete_all:
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -134,10 +169,10 @@ public class SmckqrActivity extends AppCompatActivity {
                         .create().show();
                 break;
             case R.id.forward:
-                Intent intent = new Intent(SmckqrActivity.this, SmckActivity.class);
+                Intent intent = new Intent(SmxcccqrActivity.this, SmxcccActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putStringArrayList("list", info);
-                bundle.putSerializable("data",data);
+                bundle.putSerializable("data", data);
                 intent.putExtras(bundle);
                 startActivity(intent);
                 finish();
@@ -148,13 +183,72 @@ public class SmckqrActivity extends AppCompatActivity {
         }
     }
 
+    class TaskPagerAdapter extends LazyFragmentPagerAdapter {
+
+        public TaskPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public int getCount() {
+            return fragments.length;
+        }
+
+        @Override
+        protected Fragment getItem(ViewGroup container, int position) {
+            return fragments[position];
+        }
+    }
+
+
+    /**
+     * 获取库存汇总信息
+     */
+    public void getSum() {
+        Cursor cur1 = db.rawQuery(
+                "SELECT ifnull(sum(realwtg),0) as realwtg ,ifnull(sum(theoWgt),0) as realwtg,count(*) as js,ifnull(loadno,' ') FROM YG_XCXXM ",
+                null);
+        int x = cur1.getCount();
+        Log.d("查询结果:", x + "");
+        if (x != 0) {
+            cur1.moveToFirst();
+            String realwtg2 = String.valueOf(cur1.getDouble(0));
+            BigDecimal bd11 = new BigDecimal(Double.parseDouble(realwtg2));
+            Double realwtg3 = bd11.setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
+            String realwtg4 = String.valueOf(realwtg3);
+
+            String theowgt2 = String.valueOf(cur1.getDouble(1));
+            BigDecimal bd12 = new BigDecimal(Double.parseDouble(theowgt2));
+            Double theowgt3 = bd12.setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
+            String theowgt4 = String.valueOf(theowgt3);
+
+            String qty2 = String.valueOf(cur1.getInt(2));
+
+            total = realwtg4;
+
+            sum.setText(qty2);
+            sumRealWeight.setText(realwtg4);
+            sumWeight.setText(theowgt4);
+        }
+        cur1.close();
+        ((Smxcccqr) fragments[0]).getData();
+    }
+
+    /**
+     * 全部删除
+     */
+    private void deleteAll() {
+        db.execSQL("Delete FROM YG_XCXXM");
+        ((Smxcccqr) fragments[0]).clear();
+        ((SmxcrqDelete) fragments[1]).clear();
+    }
 
     class qurenkcddinfoHandler implements Runnable {
         @Override
         public void run() {
             String messageStr = "";
             boolean loadstate = false;
-            Cursor cur = db.rawQuery("SELECT invid FROM YG_CKXXM ", null);
+            Cursor cur = db.rawQuery("SELECT invid FROM YG_XCXXM ", null);
             String hhhh1 = "";
             int i = 0;
             if (cur.getCount() != 0) {
@@ -196,19 +290,21 @@ public class SmckqrActivity extends AppCompatActivity {
             SimpleDateFormat format2 = new SimpleDateFormat("HHmmss");
             String time3 = format2.format(date2);
             int w = 20 * i;
-            List<String> list = getSmck();
-            String data = String.format("%-10s", "SHHL36") + "A"
+            List<String> list = getSmxcccrk();
+            String data = String.format("%-10s", "SHHL37L") + "B"
                     + String.format("%-10s", name) + String.format("%-1s", bz)
                     + String.format("%-1s", bc)
                     + String.format("%-8s", time2)
                     + String.format("%-20s", list.get(0))
                     + String.format("%-20s", list.get(1))
-                    + String.format("%-20s", "A")
+                    + String.format("%-20s", list.get(2))
                     + String.format("%-10s", total)
                     + String.format("%-3s", String.valueOf(i))
-                    + String.format("%-" + w + "s", hhhh1) + "*";
+                    + String.format("%-20s", ch)
+                    + String.format("%-" + w + "s", hhhh1)
+                    + "*";
 
-            Log.i("出库参数", data);
+            Log.i("线材入库参数", data);
             // 设置需调用WebService接口需要传入的参数
             rpc.addProperty("date", data);
 
@@ -227,7 +323,7 @@ public class SmckqrActivity extends AppCompatActivity {
                 loadstate = true;
                 Object object = (Object) envelope.getResponse();
                 result = object.toString();
-                Log.i("入库确认", result);
+                Log.i("线材入库确认", result);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -239,10 +335,11 @@ public class SmckqrActivity extends AppCompatActivity {
                     Bundle bundle = new Bundle();
                     message.what = 0;
                     bundle.putString("msg", messageStr);// 信息
+
                     message.setData(bundle);
                     handler.sendMessage(message);
                 } else {
-                    db.execSQL("Delete FROM YG_CKXXM");
+                    db.execSQL("Delete FROM YG_XCXXM");
                     messageStr = result.substring(11, 21);
                     Message message = new Message();
                     Bundle bundle = new Bundle();
@@ -255,106 +352,39 @@ public class SmckqrActivity extends AppCompatActivity {
         }
     }
 
-    private void initFragment() {
-        Smckqr s = new Smckqr();
-        fragments[0] = s;
-        SmckqrDelete sd = new SmckqrDelete();
-        fragments[1] = sd;
-    }
-
-    class TaskPagerAdapter extends LazyFragmentPagerAdapter {
-
-        public TaskPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public int getCount() {
-            return fragments.length;
-        }
-
-        @Override
-        protected Fragment getItem(ViewGroup container, int position) {
-            return fragments[position];
-        }
-    }
-
-    /**
-     * 获取库存汇总信息
-     */
-    public void getSum() {
-        Cursor cur1 = db.rawQuery(
-                "SELECT ifnull(sum(realwtg),0) as realwtg ,ifnull(sum(theoWgt),0) as realwtg,count(*) as js,ifnull(loadno,' ') FROM YG_CKXXM ",
-                null);
-        int x = cur1.getCount();
-        Log.d("查询结果:", x + "");
-        if (x != 0) {
-            cur1.moveToFirst();
-            String realwtg2 = String.valueOf(cur1.getDouble(0));
-            BigDecimal bd11 = new BigDecimal(Double.parseDouble(realwtg2));
-            Double realwtg3 = bd11.setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
-            String realwtg4 = String.valueOf(realwtg3);
-
-            String theowgt2 = String.valueOf(cur1.getDouble(1));
-            BigDecimal bd12 = new BigDecimal(Double.parseDouble(theowgt2));
-            Double theowgt3 = bd12.setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
-            String theowgt4 = String.valueOf(theowgt3);
-
-            String qty2 = String.valueOf(cur1.getInt(2));
-
-            total = realwtg4;
-
-            sum.setText(qty2);
-            sumRealWeight.setText(realwtg4);
-            sumWeight.setText(theowgt4);
-        }
-        cur1.close();
-        ((Smckqr) fragments[0]).getData();
-    }
-
-    /**
-     * 全部删除
-     */
-    private void deleteAll() {
-        db.execSQL("Delete FROM YG_CKXXM");
-        ((Smckqr) fragments[0]).clear();
-        ((SmckqrDelete) fragments[1]).clear();
-    }
-
     @SuppressLint("HandlerLeak")
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-
             switch (msg.what) {
                 case 0:
-                    String loadstatemessage1 = msg.getData().getString("msg");
-                    AlertDialog.Builder builder1 = new AlertDialog.Builder(SmckqrActivity.this);
-                    builder1.setTitle("提示")
-                            .setMessage(loadstatemessage1)
+                    String loadstatemessage = msg.getData().getString("msg");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(SmxcccqrActivity.this);
+                    builder.setTitle("提示")
+                            .setMessage(loadstatemessage)
                             .setPositiveButton("确认", null)
                             .create().show();
                     break;
                 case 1:
-                    String loadstatemessage = msg.getData().getString("msg");
-                    AlertDialog.Builder builder = new AlertDialog.Builder(SmckqrActivity.this);
-                    builder.setTitle("提示")
-                            .setMessage("出库成功" + "\n" + "出库单号为：" + loadstatemessage)
+                    String loadstatemessage1 = msg.getData().getString("msg");
+                    AlertDialog.Builder builder1 = new AlertDialog.Builder(SmxcccqrActivity.this);
+                    builder1.setTitle("提示")
+                            .setMessage("线材产出入库成功" + "\n" + "入库单号为：" + loadstatemessage1)
                             .setPositiveButton("确认", null)
                             .create().show();
-                    ((SmckqrDelete) fragments[1]).clear();
+                    ((SmxcrqDelete) fragments[1]).clear();
                     getSum();
                     break;
             }
         }
     };
 
-    private ArrayList<String> getSmck() {
+    private ArrayList<String> getSmxcccrk() {
         ArrayList<String> list = new ArrayList<>();
         DatabaseHelper helper = new DatabaseHelper(this);
         SQLiteDatabase db = helper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT IKU,OKU,IKUBIE,OKUBIE FROM YG_CKXXM", null);
+        Cursor cursor = db.rawQuery("SELECT KU,QU,PAI,KUBIE FROM YG_XCXXM", null);
         if (cursor.getCount() != 0) {
             cursor.moveToNext();
             list.add(cursor.getString(0));
@@ -364,4 +394,5 @@ public class SmckqrActivity extends AppCompatActivity {
         }
         return list;
     }
+
 }

@@ -21,6 +21,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,7 +45,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import invonate.cn.ygscanner.Entry.Goods;
-import invonate.cn.ygscanner.Entry.Kuqu;
+import invonate.cn.ygscanner.Entry.Ku;
 import invonate.cn.ygscanner.Util.DatabaseHelper;
 import invonate.cn.ygscanner.Util.IpConfig;
 
@@ -72,10 +73,14 @@ public class SmddActivity extends AppCompatActivity {
     TextView sumRealWeight;
     @BindView(R.id.sum_weight)
     TextView sumWeight;
+    @BindView(R.id.sp_kubie)
+    AppCompatSpinner spKubie;
+    @BindView(R.id.finish)
+    Button finish;
 
-    private List<Kuqu> kuqu = new ArrayList<>();
     private List<String> list_pai = new ArrayList<>();
 
+    private String kubie;
     private String ku;
     private String qu;
     private String pai;
@@ -86,7 +91,10 @@ public class SmddActivity extends AppCompatActivity {
     private String bzmc;// 班组
     private String zlmc;// 类别
 
+    int old_ku = 0;
     int old_qu = 0;
+
+    ArrayList<Ku.DataBean.KubieBean> data;
 
     @SuppressLint("HandlerLeak")
     Handler handler = new Handler() {
@@ -145,9 +153,8 @@ public class SmddActivity extends AppCompatActivity {
         dialog.setMessage("加载中");
         DatabaseHelper database = new DatabaseHelper(this);
         db = database.getReadableDatabase();
-        kuqu = JSON.parseArray(getJson("kuqu2.json", this), Kuqu.class);
         list_pai = JSON.parseArray(getJson("pai.json", this), String.class);
-
+        data = (ArrayList<Ku.DataBean.KubieBean>) getIntent().getExtras().getSerializable("data");
         ArrayAdapter<String> adapter3 = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, list_pai);
         spPai.setAdapter(adapter3);
         adapter3.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -163,37 +170,43 @@ public class SmddActivity extends AppCompatActivity {
             }
         });
 
-        ArrayAdapter<Kuqu> adapter1 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, kuqu);
-        spKu.setAdapter(adapter1);
-        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        spKu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        ArrayAdapter<Ku.DataBean.KubieBean> adapter0 = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, data);
+        spKubie.setAdapter(adapter0);
+        adapter0.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spKubie.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, final int position, long l) {
-                ku = kuqu.get(position).getName().trim();
-                final List<String> list_qu = kuqu.get(position).getValue();
-                if (position == 0) {
-                    spQu.setAdapter(null);
-                } else {
-                    Log.i("spKu", "spKu");
-                    ArrayAdapter<String> adapter2 = new ArrayAdapter<>(SmddActivity.this, android.R.layout.simple_spinner_item, list_qu);
-                    spQu.setAdapter(adapter2);
-                    adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spQu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                            qu = list_qu.get(i).trim();
-                        }
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                kubie = data.get(i).getName();
+                final List<Ku.DataBean.KubieBean.KuBean> list_ku = data.get(i).getKu();
+                ArrayAdapter<Ku.DataBean.KubieBean.KuBean> adapter1 = new ArrayAdapter<>(SmddActivity.this, android.R.layout.simple_spinner_item, list_ku);
+                spKu.setAdapter(adapter1);
+                adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spKu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        ku = list_ku.get(i).getName();
+                        final List<Ku.DataBean.KubieBean.KuBean.QvBean> list_qv = list_ku.get(i).getQv();
+                        ArrayAdapter<Ku.DataBean.KubieBean.KuBean.QvBean> adapter2 = new ArrayAdapter<>(SmddActivity.this, android.R.layout.simple_spinner_item, list_qv);
+                        spQu.setAdapter(adapter2);
+                        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spQu.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                qu = list_qv.get(i).getValue();
+                            }
 
-                        @Override
-                        public void onNothingSelected(AdapterView<?> adapterView) {
+                            @Override
+                            public void onNothingSelected(AdapterView<?> adapterView) {
 
-                        }
-                    });
-                    if (old_qu != 0) {
-                        spQu.setSelection(old_qu);
+                            }
+                        });
                     }
-                }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
             }
 
             @Override
@@ -220,10 +233,6 @@ public class SmddActivity extends AppCompatActivity {
                 if (sure) {
                     if (isExecute && code.getText().length() > 25) {
                         new Thread(new querykcddinfoHandler()).start();
-//                    } else {
-//                        if (code.getText().toString().endsWith("\n")) {
-//                            new Thread(new querykcddinfoHandler()).start();
-//                        }
                     }
                 } else {
                     Toast.makeText(SmddActivity.this, "请先确认库区", Toast.LENGTH_SHORT).show();
@@ -241,35 +250,43 @@ public class SmddActivity extends AppCompatActivity {
             List<String> list = bundle.getStringArrayList("list");
             if (list != null) {
                 String list_ku = list.get(0);
-                String list_qu = list.get(1);
-                List<String> qu = null;
-                for (int i = 0; i < kuqu.size(); i++) {
-                    if (list_ku.equals(kuqu.get(i).getName())) {
-                        qu = kuqu.get(i).getValue();
-                        spKu.setSelection(i);
+                String list_qv = list.get(1);
+                String list_kubie = list.get(3);
+                List<Ku.DataBean.KubieBean.KuBean> ku = null;
+                List<Ku.DataBean.KubieBean.KuBean.QvBean> qv = null;
+                for (int i = 0; i < data.size(); i++) {
+                    if(list_kubie.equals(data.get(i).getName())){
+                        ku = data.get(i).getKu();
+                        spKubie.setSelection(i);
                         break;
                     }
                 }
-                if (qu != null) {
-                    for (int j = 0; j < qu.size(); j++) {
-                        if (list_qu.equals(qu.get(j))) {
-                            Log.i("spQu", "spQu");
-//                            spQu.setSelection(j);
-                            old_qu = j;
+                if (ku != null) {
+                    for (int n = 0; n < ku.size(); n++) {
+                        if (list_ku.equals(ku.get(n).getName())) {
+                            qv = ku.get(n).getQv();
+                            old_ku = n;
+                            spKu.setSelection(n);
                             break;
                         }
+                    }
+                    if (qv != null) {
+                        for (int m = 0; m < qv.size(); m++) {
+                            if (list_qv.equals(qv.get(m).getValue())) {
+                                old_qu = m;
+                                spQu.setSelection(m);
+                                break;
+                            }
+                        }
+
                     }
                 }
                 String string_pai = list.get(2);
                 for (int i = 0; i < list_pai.size(); i++) {
                     if (string_pai.equals(list_pai.get(i))) {
                         spPai.setSelection(i);
-
                     }
                 }
-//                spKu.setEnabled(false);
-//                spQu.setEnabled(false);
-//                spPai.setEnabled(false);
             }
         }
     }
@@ -279,6 +296,10 @@ public class SmddActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.sure:
                 if (!sure) {
+                    if (kubie == null || "".equals(kubie)) {
+                        Toast.makeText(this, "请选择库别", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     if (ku == null || "".equals(ku)) {
                         Toast.makeText(this, "请选择库区", Toast.LENGTH_SHORT).show();
                         return;
@@ -287,6 +308,7 @@ public class SmddActivity extends AppCompatActivity {
                         Toast.makeText(this, "请选择区", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    spKubie.setEnabled(false);
                     spKu.setEnabled(false);
                     spQu.setEnabled(false);
                     spPai.setEnabled(false);
@@ -480,10 +502,10 @@ public class SmddActivity extends AppCompatActivity {
                         Bundle bundle = new Bundle();
                         bundle.putSerializable("goods", goods);
 
-                        String insert = "insert into YG_DDXXM(INVID,SCHDNO,ORDERLENGTH,ORDERTHICK,THEOWGT,REALWTG,PRODSPECNO,KU,QU,PAI) "
+                        String insert = "insert into YG_DDXXM(INVID,SCHDNO,ORDERLENGTH,ORDERTHICK,THEOWGT,REALWTG,PRODSPECNO,KUBIE,KU,QU,PAI) "
                                 + " values ('" + invId + "'" + ",'" + schdNo + "','"
                                 + orderLength + "','" + orderThick + "','" + theoWgt + "' ,'"
-                                + realWtg + "','" + prodSpecNo + "','" + ku + "','" + qu + "','" + pai + "')";
+                                + realWtg + "','" + prodSpecNo + "','" + kubie + "','" + ku + "','" + qu + "','" + pai + "')";
                         try {
                             db.execSQL(insert);
                         } catch (Exception w) {
